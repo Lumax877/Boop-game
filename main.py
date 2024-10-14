@@ -3,8 +3,6 @@ import sys
 
 pygame.init()
 
-
-# Stałe
 WIDTH, HEIGHT = 600, 700
 ROWS, COLS = 6, 6
 SQUARE_SIZE = WIDTH // COLS
@@ -28,11 +26,7 @@ cats_in_hand = {
 
 board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
 
-
-
 selected_piece = 'small'
-
-
 
 
 def draw_board():
@@ -81,6 +75,7 @@ def draw_board():
 
     pygame.display.update()
 
+
 def get_square_under_mouse(pos):
     x, y = pos
     row = y // SQUARE_SIZE
@@ -119,8 +114,7 @@ def push_opposite(pushing_row, pushing_col, pushed_row, pushed_col):
     pushing_piece = board[pushing_row][pushing_col]
     pushed_piece = board[pushed_row][pushed_col]
 
-    # Sprawdzenie, czy kot może popychać innego kota
-    if (pushing_piece in [1, 2] and pushed_piece in [3, 4]):
+    if pushing_piece in [1, 2] and pushed_piece in [3, 4]:
         return  # Mały kot nie może popychać dużego kota
 
     target_row = pushed_row + dy
@@ -131,17 +125,17 @@ def push_opposite(pushing_row, pushing_col, pushed_row, pushed_col):
             board[target_row][target_col] = pushed_piece
             board[pushed_row][pushed_col] = 0
     else:
-        # Kot zostaje wypchnięty poza planszę
-        if pushed_piece == 1:
-            cats_in_hand[1]['small'] += 1  # Wypchnięto małego kota Gracza 1
-        elif pushed_piece == 2:
-            cats_in_hand[2]['small'] += 1  # Wypchnięto małego kota Gracza 2
-        elif pushed_piece == 3:
-            cats_in_hand[1]['large'] += 1  # Wypchnięto dużego kota Gracza 1
-        elif pushed_piece == 4:
-            cats_in_hand[2]['large'] += 1  # Wypchnięto dużego kota Gracza 2
 
-        board[pushed_row][pushed_col] = 0  # Usuń kota z planszy
+        if pushed_piece == 1:
+            cats_in_hand[1]['small'] += 1
+        elif pushed_piece == 2:
+            cats_in_hand[2]['small'] += 1
+        elif pushed_piece == 3:
+            cats_in_hand[1]['large'] += 1
+        elif pushed_piece == 4:
+            cats_in_hand[2]['large'] += 1
+
+        board[pushed_row][pushed_col] = 0
 
 
 def check_three_in_a_row(player):
@@ -150,23 +144,21 @@ def check_three_in_a_row(player):
             if board[row][col] == player and board[row][col + 1] == player and board[row][col + 2] == player:
                 remove_three_cats(row, col, row, col + 1, row, col + 2, player)
 
-    # Sprawdzanie pionowe
     for col in range(COLS):
         for row in range(ROWS - 2):  # Maksymalna długość linii pionowej to ROWS - 2
             if board[row][col] == player and board[row + 1][col] == player and board[row + 2][col] == player:
                 remove_three_cats(row, col, row + 1, col, row + 2, col, player)
 
-    # Sprawdzanie diagonalne (lewo-dół do prawo-góra)
     for row in range(ROWS - 2):
         for col in range(COLS - 2):
             if board[row][col] == player and board[row + 1][col + 1] == player and board[row + 2][col + 2] == player:
                 remove_three_cats(row, col, row + 1, col + 1, row + 2, col + 2, player)
 
-    # Sprawdzanie diagonalne (lewo-góra do prawo-dół)
     for row in range(2, ROWS):
         for col in range(COLS - 2):
             if board[row][col] == player and board[row - 1][col + 1] == player and board[row - 2][col + 2] == player:
                 remove_three_cats(row, col, row - 1, col + 1, row - 2, col + 2, player)
+
 
 def remove_three_cats(row1, col1, row2, col2, row3, col3, player):
     board[row1][col1] = 0
@@ -174,9 +166,6 @@ def remove_three_cats(row1, col1, row2, col2, row3, col3, player):
     board[row3][col3] = 0
     cats_in_hand[player]['small'] += 2
     cats_in_hand[player]['large'] += 1
-
-
-
 
 
 def main():
