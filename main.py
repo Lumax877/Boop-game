@@ -90,8 +90,38 @@ def move_cat(row, col, player, piece_type):
         elif piece_type == 'large':
             board[row][col] = player + 2
         cats_in_hand[player][piece_type] -= 1
+
+        # Popychanie sąsiednich kotów
         push_around(row, col)
-        check_three_in_a_row(player)
+
+        # Sprawdzanie warunku 1: Zwycięstwo, gdy wszystkie duże koty są na planszy
+        check_victory_large_cats(player)
+
+        # Sprawdzanie warunku 2: Sprawdź, czy wszystkie małe koty zostały użyte
+        if cats_in_hand[player]['small'] == 0 and piece_type == 'small':
+            # Mały kot wraca na rękę i zamienia się w dużego
+            board[row][col] = 0  # Usunięcie tego małego kota z planszy
+            cats_in_hand[player]['large'] += 1  # Dodanie dużego kota
+            print(f"Gracz {player} zamienia ostatniego małego kota na dużego!")
+
+        # Sprawdzanie trzech w linii
+        check_lines(player)
+
+def check_victory_large_cats(player):
+    if cats_in_hand[player]['small'] == 0 and cats_in_hand[player]['large'] == 0:
+        large_cats_on_board = 0
+
+        for row in range(ROWS):
+            for col in range(COLS):
+                if (player == 1 and board[row][col] == 3) or (player == 2 and board[row][col] == 4):
+                    large_cats_on_board += 1
+
+        # Jeśli wszystkie duże koty są na planszy
+        if large_cats_on_board == 8:
+            print(f"Gracz {player} wygrywa, mając wszystkie duże koty na planszy!")
+            pygame.quit()
+            sys.exit()
+
 
 
 def push_around(row, col):
@@ -138,34 +168,98 @@ def push_opposite(pushing_row, pushing_col, pushed_row, pushed_col):
         board[pushed_row][pushed_col] = 0
 
 
-def check_three_in_a_row(player):
+def check_lines(player):
+    player_pieces = [player, player + 2]  # małe i duże koty gracza
+    # Sprawdzenie poziome
     for row in range(ROWS):
-        for col in range(COLS - 2):  # Maksymalna długość linii poziomej to COLS - 2
-            if board[row][col] == player and board[row][col + 1] == player and board[row][col + 2] == player:
-                remove_three_cats(row, col, row, col + 1, row, col + 2, player)
+        consecutive = 0
+        for col in range(COLS):
+            if board[row][col] in player_pieces:
+                consecutive += 1
+            else:
+                if consecutive >= 3:
+                    remove_cats_in_line(row, col - consecutive, row, col - 1, consecutive, player)
+                consecutive = 0
+        if consecutive >= 3:
+            remove_cats_in_line(row, COLS - consecutive, row, COLS - 1, consecutive, player)
 
+    # Sprawdzenie pionowe
     for col in range(COLS):
-        for row in range(ROWS - 2):  # Maksymalna długość linii pionowej to ROWS - 2
-            if board[row][col] == player and board[row + 1][col] == player and board[row + 2][col] == player:
-                remove_three_cats(row, col, row + 1, col, row + 2, col, player)
+        consecutive = 0
+        for row in range(ROWS):
+            if board[row][col] in player_pieces:
+                consecutive += 1
+            else:
+                if consecutive >= 3:
+                    remove_cats_in_line(row - consecutive, col, row - 1, col, consecutive, player)
+                consecutive = 0
+        if consecutive >= 3:
+            remove_cats_in_line(ROWS - consecutive, col, ROWS - 1, col, consecutive, player)
 
+    # Sprawdzenie ukosów (diagonalna w prawo)
     for row in range(ROWS - 2):
         for col in range(COLS - 2):
-            if board[row][col] == player and board[row + 1][col + 1] == player and board[row + 2][col + 2] == player:
-                remove_three_cats(row, col, row + 1, col + 1, row + 2, col + 2, player)
+            consecutive = 0
+            for i in range(min(ROWS - row, COLS - col)):
+                if board[row + i][col + i] in player_pieces:
+                    consecutive += 1
+                else:
+                    if consecutive >= 3:
+                        remove_cats_in_line(row, col, row + i - 1, col + i - 1, consecutive, player)
+                    consecutive = 0
+            if consecutive >= 3:
+                remove_cats_in_line(row, col, row + consecutive - 1, col + consecutive - 1, consecutive, player)
 
+    # Sprawdzenie ukosów (diagonalna w lewo)
     for row in range(2, ROWS):
         for col in range(COLS - 2):
-            if board[row][col] == player and board[row - 1][col + 1] == player and board[row - 2][col + 2] == player:
-                remove_three_cats(row, col, row - 1, col + 1, row - 2, col + 2, player)
+            consecutive = 0
+            for i in range(min(row + 1, COLS - col)):
+                if board[row - i][col + i] in player_pieces:
+                    consecutive += 1
+                else:
+                    if consecutive >= 3:
+                        remove_cats_in_line(row, col, row - i + 1, col + i - 1, consecutive, player)
+                    consecutive = 0
+            if consecutive >= 3:
+                remove_cats_in_line(row, col, row - consecutive + 1, col + consecutive - 1, consecutive, player)
 
 
-def remove_three_cats(row1, col1, row2, col2, row3, col3, player):
-    board[row1][col1] = 0
-    board[row2][col2] = 0
-    board[row3][col3] = 0
-    cats_in_hand[player]['small'] += 2
-    cats_in_hand[player]['large'] += 1
+def remove_cats_in_line(row1, col1, row2, col2, length, player):
+    # Usuń wszystkie koty z linii od (row1, col1) do (row2, col2)
+    delta_row = (row2 - row1) // (length - 1)
+    delta_col = (col2 - col1) // (length - 1)
+
+    all_large = True  # Flaga do sprawdzenia, czy wszystkie koty są duże
+    for i in range(length):
+        row = row1 + i * delta_row
+        col = col1 + i * delta_col
+        piece = board[row][col]
+
+        if piece in [1, 2]:  # Jeśli jakikolwiek kot jest mały
+            all_large = False
+
+        # Przenosimy koty z powrotem na rękę gracza
+        if piece in [1, 3]:  # gracz 1
+            cats_in_hand[1]['small'] += 1 if piece == 1 else 0
+            cats_in_hand[1]['large'] += 1 if piece == 3 else 0
+        elif piece in [2, 4]:  # gracz 2
+            cats_in_hand[2]['small'] += 1 if piece == 2 else 0
+            cats_in_hand[2]['large'] += 1 if piece == 4 else 0
+
+        board[row][col] = 0  # Opróżniamy pole na planszy
+
+    # Sprawdź, czy linia składa się tylko z dużych kotów
+    if all_large:
+        print(f"Gracz {player} wygrywa grę z linią dużych kotów!")
+        pygame.quit()
+        sys.exit()
+
+    # Zamiana jednego małego kota na dużego po usunięciu linii
+    if cats_in_hand[player]['small'] > 0:
+        cats_in_hand[player]['small'] -= 1
+        cats_in_hand[player]['large'] += 1
+        print(f"Gracz {player} zamienia jednego małego kota na dużego.")
 
 
 def main():
@@ -195,12 +289,12 @@ def main():
                     row, col = get_square_under_mouse(pos)
                     if board[row][col] == 0 and cats_in_hand[player][selected_piece] > 0:
                         move_cat(row, col, player, selected_piece)
-                        check_three_in_a_row(player)
+                        check_lines(player)
                         player = 3 - player
 
 
 main()
 
-# TODO: winning condition
-# TODO: line detection logic when big cat is involved
-# TODO: row-longer-than-3 handling?
+# Testing needed
+# Warning: simplified line-longer-than-3 handling
+
