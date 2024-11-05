@@ -193,16 +193,14 @@ def main():
                 if event.button == 1:
                     pos = pygame.mouse.get_pos()
                     row, col = get_square_under_mouse(pos)
-                    if board[row][col] == 0:
+                    if board[row][col] == 0 and cats_in_hand[player][selected_piece] > 0:
                         move_cat(row, col, player, selected_piece)
                         check_three_in_a_row(player)
                         player = 3 - player
-                        check_three_in_a_row(player)
 
 
 main()
 
-# TODO: prevent turn skip when clicking while no selected pieces available
 # TODO: winning condition
 # TODO: line detection logic when big cat is involved
 # TODO: row-longer-than-3 handling?
