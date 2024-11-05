@@ -297,4 +297,4 @@ main()
 
 # Testing needed
 # Warning: simplified line-longer-than-3 handling
-
+# Warning: no choice when all small cats are on board
